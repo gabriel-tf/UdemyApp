@@ -1,0 +1,159 @@
+﻿@{
+    ViewData["Title"] = "Client";
+}
+<h1>@ViewData["Title"]</h1>
+
+<p>Use this page list, create and edit clients.</p>
+
+<br />
+
+<div class="container" id="divClient">
+    <div class="form-group row">
+        <div class="col-md-3">
+            <label for="txtCnpj">Cnpj: </label>
+            <input id="txtCnpj" class="form-control" type="text" />
+        </div>
+        <div class="col-md-3">
+            <label for="txtName">Name: </label>
+            <input id="txtName" class="form-control" type="text" />
+        </div>
+        <div class="col-md-3">
+            <label for="txtPhone">Phone: </label>
+            <input id="txtPhone" class="form-control" type="text" />
+        </div>
+        <div class="col-md-3 align-self-end">
+            <button id="btnSaveClient" class="btn btn-primary" title="Save">Save</button>
+        </div>
+    </div>
+</div>
+
+<br />
+
+<h3>List of Clients</h3>
+
+<div class="container" id="divClients">
+    <table id="tableClients" class="table">
+        <thead>
+            <tr>
+                <th>Cnpj</th>
+                <th>Name</th>
+                <th>Phone</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody id="tbodyClients"></tbody>
+    </table>
+</div>
+
+<script>
+
+    //TODO: Move these scripts to a proper file
+
+    $(document).ready(function () {
+
+        getClients();
+
+        $("#btnSaveClient").on("click", function () {
+            if (!valideteFields()) {
+                alert("Empty field(s).");
+                return;
+            }
+            createClient();
+        });
+
+        $("#tbodyClients").on("click", "#btnEditClient", function () {
+            var $row = $(this).closest("tr");
+            $("#txtCnpj").val($row.find("#idCnpj").text());
+            $("#txtName").val($row.find("#idName").text());
+            $("#txtPhone").val($row.find("#idPhone").text());
+        });
+
+        $("#tbodyClients").on("click", "#btnRemoveClient", function () {
+            var $row = $(this).closest("tr");
+            var cnpj = $row.find("#idCnpj").text();
+            var name = $row.find("#idName").text();
+            var phone = $row.find("#idPhone").text();
+
+            if (confirm("Do you really wanna remove client " + name + "?")) {
+                removeClient(cnpj, name, phone);
+            }
+        });
+
+    });
+
+    function getClients() {
+        console.log("Get")
+        clearClientTable();
+
+        request = $.ajax({
+            type: "GET",
+            url: "/Home/GetClients",
+            success: function (response) {
+                $.each(response, function (response, item) {
+                    $('#tbodyClients').append(
+                        '<tr><td id="idCnpj">' + item.cnpj +
+                        '</td><td id="idName">' + item.name +
+                        '</td><td id="idPhone">' + item.phone +
+                        '</td><td><button id="btnEditClient" class="btn btn-primary" title="Edit"><i class="fas fa-edit"></i></button>' +
+                        ' <button id="btnRemoveClient" class="btn btn-danger" title="Remove"><i class="fas fa-trash"></i></button></td></tr>');
+                });
+            }, error: function (response) {
+                alert("Ops.");
+            }
+        });
+    }
+
+    function valideteFields() {
+        return $("#txtCnpj").val() != "" || $("#txtName").val() != "" || $("#txtPhone").val() != "";
+    }
+
+    function createClient() {
+        var objClient = {
+            cnpj: $("#txtCnpj").val(),
+            name: $("#txtName").val(),
+            phone: $("#txtPhone").val()
+        }
+
+        request = $.ajax({
+            url: "/Home/CreateClient",
+            type: "post",
+            data: {
+                client: objClient
+            },
+            success: function (response) {
+                getClients();
+                alert(response.message);
+            }
+        });
+    }
+
+    function removeClient(cnpj, name, phone) {
+        var objClient = {
+            cnpj: cnpj,
+            name: name,
+            phone: phone
+        }
+
+        request = $.ajax({
+            url: "/Home/RemoveClient",
+            type: "post",
+            data: {
+                client: objClient
+            },
+            success: function (response) {
+                getClients();
+                alert(response.message);
+            }
+        });
+    }
+
+    function clearClientTable() {
+        $("#tbodyClients > tr").remove();
+    }
+
+    //TODO: Create and move to a utils JS file
+    function removeSpecialCharactere(value) {
+        return value.replace(/[^\w\s]/gi, '');
+    }
+
+</script>
